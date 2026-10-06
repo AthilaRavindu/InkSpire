@@ -1,0 +1,19 @@
+---
+layout: default
+---
+<nav class="page-nav">
+  <a href="{{ site.baseurl }}/" class="nav-brand">INK<span>SPIRE</span></a>
+  <a href="{{ site.baseurl }}/" class="nav-back">← Back to Inkspire</a>
+</nav>
+
+<div class="legal-wrap">
+  <div class="page-tag">{{ page.page_tag | default: "Legal" }}</div>
+  <h1 class="page-title">{{ page.title }}</h1>
+  <p class="updated">{{ page.updated | default: "Last updated: October 2025" }}</p>
+
+  {{ content }}
+</div>
+
+<footer class="page-footer">
+  <p>© 2025 Inkspire · <a href="{{ site.baseurl }}/">Home</a> · <a href="{{ site.baseurl }}/affiliate-disclosure.html">Affiliate Disclosure</a> · <a href="{{ site.baseurl }}/privacy-policy.html">Privacy Policy</a></p>
+</footer>

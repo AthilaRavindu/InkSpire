@@ -1,0 +1,19 @@
+title: Inkspire
+description: >-
+  Your destination for tattoo inspiration, style guides,
+  and artist resources — powered by 50K monthly Pinterest views.
+url: "https://athilaravindu.github.io"
+baseurl: "/InkSpire"
+author: Inkspire Editorial
+email: buildsenseit@gmail.com
+
+# Build settings
+markdown: kramdown
+highlighter: rouge
+
+# Don't process these
+exclude:
+  - README.md
+  - "*.sh"
+  - Gemfile
+  - Gemfile.lock

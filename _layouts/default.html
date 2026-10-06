@@ -1,0 +1,13 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{% if page.title %}{{ page.title }} — {% endif %}Inkspire</title>
+  <meta name="description" content="{{ page.description | default: site.description }}">
+  {% include head.html %}
+</head>
+<body>
+{{ content }}
+</body>
+</html>

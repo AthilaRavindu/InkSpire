@@ -1,0 +1,28 @@
+---
+layout: default
+---
+<nav class="page-nav">
+  <a href="{{ site.baseurl }}/" class="nav-brand">INK<span>SPIRE</span></a>
+  <a href="{{ site.baseurl }}/" class="nav-back">← Back to Inkspire</a>
+</nav>
+
+<img class="article-hero" src="{{ page.hero_image }}" alt="{{ page.hero_alt }}">
+
+<div class="article-wrap">
+  <div class="article-tag">{{ page.article_tag }}</div>
+  <h1 class="article-title">{{ page.title }}</h1>
+  <div class="article-meta">
+    <span>By Inkspire Editorial</span>
+    <span>·</span>
+    <span>{{ page.read_time }} read</span>
+    <span>·</span>
+    <span>{{ page.category }}</span>
+  </div>
+  <div class="article-body">
+    {{ content }}
+  </div>
+</div>
+
+<footer class="page-footer">
+  <p>© 2025 Inkspire · <a href="{{ site.baseurl }}/">Home</a> · Affiliate Disclosure: We earn from qualifying Amazon purchases.</p>
+</footer>
