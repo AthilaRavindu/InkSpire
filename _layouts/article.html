@@ -1,6 +1,30 @@
 ---
 layout: default
 ---
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "{{ page.title | escape }}",
+  "description": "{{ page.description | escape }}",
+  "image": "{{ page.hero_image }}",
+  "author": {
+    "@type": "Organization",
+    "name": "Inkspire Editorial",
+    "url": "{{ site.url }}{{ site.baseurl }}"
+  },
+  "publisher": {
+    "@type": "Organization",
+    "name": "Inkspire",
+    "url": "{{ site.url }}{{ site.baseurl }}"
+  },
+  "dateModified": "{{ page.updated | default: '2025-10-01' }}",
+  "mainEntityOfPage": {
+    "@type": "WebPage",
+    "@id": "{{ site.url }}{{ site.baseurl }}{{ page.url }}"
+  }
+}
+</script>
 <nav class="page-nav">
   <a href="{{ site.baseurl }}/" class="nav-brand">INK<span>SPIRE</span></a>
   <a href="{{ site.baseurl }}/" class="nav-back">← Back to Inkspire</a>

@@ -1,0 +1,43 @@
+name: Weekly Content Automation
+
+on:
+  schedule:
+    # Runs every Monday at 8:00 AM UTC (adjust timezone as needed)
+    - cron: '0 8 * * 1'
+  workflow_dispatch:  # Also allows manual trigger from GitHub Actions tab
+
+jobs:
+  generate-content:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install anthropic requests
+
+      - name: Generate weekly blog post
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python .github/scripts/generate_post.py
+
+      - name: Generate Pinterest pin pack
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python .github/scripts/generate_pins.py
+
+      - name: Commit new content
+        run: |
+          git config --global user.name "Inkspire Bot"
+          git config --global user.email "buildsenseit@gmail.com"
+          git add -A
+          git diff --staged --quiet || git commit -m "Auto: weekly content drop $(date +'%Y-%m-%d')"
+          git push

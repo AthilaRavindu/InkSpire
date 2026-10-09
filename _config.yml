@@ -6,10 +6,17 @@ url: "https://athilaravindu.github.io"
 baseurl: "/InkSpire"
 author: Inkspire Editorial
 email: buildsenseit@gmail.com
+twitter_username: inkspire
+pinterest_username: PinTastic00
 
 # Build settings
 markdown: kramdown
 highlighter: rouge
+
+# Plugins
+plugins:
+  - jekyll-sitemap
+  - jekyll-seo-tag
 
 # Don't process these
 exclude:
@@ -17,3 +24,4 @@ exclude:
   - "*.sh"
   - Gemfile
   - Gemfile.lock
+  - .github/
