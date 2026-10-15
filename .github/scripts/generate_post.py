@@ -1,18 +1,21 @@
 """
 Inkspire Weekly Blog Post Generator
-Uses Google Gemini API (free tier — 1,500 requests/day).
-Runs every Monday via GitHub Actions.
+Uses NVIDIA NIM API (free preview tier) — deepseek-ai/deepseek-v4.1-flash
+OpenAI-compatible API via https://integrate.api.nvidia.com/v1
 """
 
-import google.generativeai as genai
-import datetime
 import os
 import json
 import random
+import datetime
+from openai import OpenAI
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key=os.environ["NVIDIA_API_KEY"],
+)
 
+MODEL = "deepseek-ai/deepseek-v4.1-flash"
 AFFILIATE_TAG = "inkspiretatto-20"
 
 TOPIC_POOL = [
@@ -82,15 +85,16 @@ def generate_article(topic):
     title, slug, tag, read_time, category, hero_image, hero_alt = topic
     product = random.choice(AMAZON_PRODUCTS)
 
-    prompt = f"""You are a professional tattoo content writer for Inkspire, a US-focused tattoo website targeting an audience aged 18-35.
+    prompt = f"""You are a professional tattoo content writer for Inkspire, a US tattoo website for an audience aged 18-35.
 Write a complete, SEO-optimised article about: "{title}"
 
 Requirements:
-- 700-900 words of useful, engaging content
-- Target keyword in first paragraph: "{title.lower()}"
+- 700-900 words of genuinely useful content
+- Use the target keyword "{title.lower()}" in the first paragraph
 - 4-6 H2 headings using <h2> tags
-- One tip box: <div class="tip-box"><strong>Pro Tip</strong><p>tip content here</p></div>
-- One product callout using EXACTLY this HTML (do not change any class names or structure):
+- One tip box using EXACTLY this HTML:
+<div class="tip-box"><strong>Pro Tip</strong><p>your tip here</p></div>
+- One product callout using EXACTLY this HTML (do not change class names):
 <div class="product-callout">
   <img src="{product['img']}" alt="{product['name']}">
   <div class="product-callout-body">
@@ -99,12 +103,19 @@ Requirements:
     <a href="https://www.amazon.com/s?k={product['query']}&tag={AFFILIATE_TAG}" target="_blank" rel="noopener nofollow" class="btn-buy">Shop on Amazon →</a>
   </div>
 </div>
-- Writing style: confident, knowledgeable, conversational — like a trusted tattoo artist
-- Output ONLY the HTML body content — no doctype, html, head, body tags, no front matter, no markdown
-- Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above"""
+- Writing style: confident, knowledgeable, conversational — like a trusted tattoo artist giving advice
+- Output ONLY the HTML body content — no doctype, html, head, body tags, no front matter, no markdown fences
+- Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above
+- Do not add inline styles"""
 
-    response = model.generate_content(prompt)
-    return response.text
+    response = client.chat.completions.create(
+        model=MODEL,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.8,
+        max_tokens=2048,
+    )
+
+    return response.choices[0].message.content
 
 
 def save_article(topic, body):

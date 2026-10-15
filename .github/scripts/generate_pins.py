@@ -1,23 +1,26 @@
 """
 Inkspire Pinterest Pin Pack Generator
-Uses Google Gemini API (free tier).
+Uses NVIDIA NIM API (free preview tier) — deepseek-ai/deepseek-v4.1-flash
 Generates 7 ready-to-post pins — paste into Pinterest's free built-in scheduler.
 """
 
-import google.generativeai as genai
-import datetime
 import os
+import datetime
+from openai import OpenAI
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = OpenAI(
+    base_url="https://integrate.api.nvidia.com/v1",
+    api_key=os.environ["NVIDIA_API_KEY"],
+)
 
+MODEL = "deepseek-ai/deepseek-v4.1-flash"
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
 WEEKLY_THEMES = [
     ("Monday Motivation", "tattoo inspiration and motivation for people thinking about getting inked"),
     ("Style Tuesday", "a specific tattoo style — fine line, blackwork, Japanese, geometric, or watercolour"),
     ("Wednesday Wisdom", "tattoo aftercare tips and how to keep tattoos looking fresh long-term"),
-    ("Trend Thursday", "trending tattoo designs in the USA right now in 2025"),
+    ("Trend Thursday", "trending tattoo designs in the USA right now"),
     ("Artist Friday", "how to find, vet, and book the right tattoo artist"),
     ("Weekend Inspo", "tattoo placement ideas and body art inspiration"),
     ("Sunday Spotlight", "an educational deep-dive into one tattoo topic"),
@@ -39,27 +42,33 @@ def generate_pin_pack(week_start: datetime.date) -> str:
         pin_date = week_start + datetime.timedelta(days=i)
         article_link = ARTICLE_LINKS[i % len(ARTICLE_LINKS)]
 
-        prompt = f"""You are a Pinterest expert writing for Inkspire, a tattoo inspiration website targeting USA tattoo fans aged 18-35.
+        prompt = f"""You are a Pinterest expert writing for Inkspire, a tattoo inspiration site targeting USA tattoo fans aged 18-35.
 
 Write ONE Pinterest pin for: {day_name} ({pin_date.strftime('%B %d, %Y')})
 Theme: {theme}
 Link: {article_link}
 
 Rules:
-- Pinterest description: 150-250 characters max
-- Include 4-5 hashtags (mix popular + niche: #tattoo #tattooinspo #tattooideas + niche ones)
-- Hook with a benefit or curiosity, not a generic statement
-- Suggest a board name from: Tattoo Ideas, Tattoo Aftercare, Tattoo Styles, Tattoo Inspiration, Fine Line Tattoos
+- Title: max 100 characters, strong hook
+- Description: 150-250 characters, ends with 4-5 hashtags mixing popular (#tattoo #tattooinspo) and niche ones
+- Suggest one of these boards: Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
+- Image suggestion: one sentence describing what to search on Pexels or Unsplash
 
-Reply in EXACTLY this format, no extra text:
-TITLE: [max 100 chars]
-DESCRIPTION: [150-250 chars + hashtags]
+Reply in EXACTLY this format, no extra text, no markdown:
+TITLE: [title here]
+DESCRIPTION: [description + hashtags]
 BOARD: [board name]
-IMAGE: [one sentence: what image to search for on Pexels or Unsplash]"""
+IMAGE: [image search suggestion]"""
 
-        response = model.generate_content(prompt)
+        response = client.chat.completions.create(
+            model=MODEL,
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.9,
+            max_tokens=300,
+        )
+
         output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
-        output += response.text.strip() + "\n"
+        output += response.choices[0].message.content.strip() + "\n"
         output += f"URL: {article_link}\n\n---\n\n"
 
     return output
