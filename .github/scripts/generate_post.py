@@ -1,21 +1,18 @@
 """
 Inkspire Weekly Blog Post Generator
-Uses NVIDIA NIM API (free preview tier) — deepseek-ai/deepseek-v4.1-flash
-OpenAI-compatible API via https://integrate.api.nvidia.com/v1
+Uses Google Gemini 2.5 Flash — permanently free tier (aistudio.google.com)
+No credit card needed. 1,500 free requests/day.
 """
 
 import os
 import json
 import random
 import datetime
-from openai import OpenAI
+import google.generativeai as genai
 
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=os.environ["NVIDIA_API_KEY"],
-)
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-MODEL = "deepseek-ai/deepseek-v4.1-flash"
 AFFILIATE_TAG = "inkspiretatto-20"
 
 TOPIC_POOL = [
@@ -90,7 +87,7 @@ Write a complete, SEO-optimised article about: "{title}"
 
 Requirements:
 - 700-900 words of genuinely useful content
-- Use the target keyword "{title.lower()}" in the first paragraph
+- Use the keyword "{title.lower()}" naturally in the first paragraph
 - 4-6 H2 headings using <h2> tags
 - One tip box using EXACTLY this HTML:
 <div class="tip-box"><strong>Pro Tip</strong><p>your tip here</p></div>
@@ -104,18 +101,12 @@ Requirements:
   </div>
 </div>
 - Writing style: confident, knowledgeable, conversational — like a trusted tattoo artist giving advice
-- Output ONLY the HTML body content — no doctype, html, head, body tags, no front matter, no markdown fences
+- Output ONLY the HTML body content — no doctype, html, head, body tags, no front matter, no markdown code fences
 - Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above
 - Do not add inline styles"""
 
-    response = client.chat.completions.create(
-        model=MODEL,
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.8,
-        max_tokens=2048,
-    )
-
-    return response.choices[0].message.content
+    response = model.generate_content(prompt)
+    return response.text
 
 
 def save_article(topic, body):

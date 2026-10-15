@@ -1,19 +1,16 @@
 """
 Inkspire Pinterest Pin Pack Generator
-Uses NVIDIA NIM API (free preview tier) — deepseek-ai/deepseek-v4.1-flash
+Uses Google Gemini 2.5 Flash — permanently free tier.
 Generates 7 ready-to-post pins — paste into Pinterest's free built-in scheduler.
 """
 
 import os
 import datetime
-from openai import OpenAI
+import google.generativeai as genai
 
-client = OpenAI(
-    base_url="https://integrate.api.nvidia.com/v1",
-    api_key=os.environ["NVIDIA_API_KEY"],
-)
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-2.5-flash")
 
-MODEL = "deepseek-ai/deepseek-v4.1-flash"
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
 WEEKLY_THEMES = [
@@ -49,26 +46,20 @@ Theme: {theme}
 Link: {article_link}
 
 Rules:
-- Title: max 100 characters, strong hook
+- Title: max 100 characters, strong curiosity hook
 - Description: 150-250 characters, ends with 4-5 hashtags mixing popular (#tattoo #tattooinspo) and niche ones
-- Suggest one of these boards: Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
-- Image suggestion: one sentence describing what to search on Pexels or Unsplash
+- Suggest one board: Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
+- Image: one sentence describing what to search on Pexels or Unsplash
 
-Reply in EXACTLY this format, no extra text, no markdown:
-TITLE: [title here]
+Reply in EXACTLY this format, no extra text:
+TITLE: [title]
 DESCRIPTION: [description + hashtags]
 BOARD: [board name]
 IMAGE: [image search suggestion]"""
 
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.9,
-            max_tokens=300,
-        )
-
+        response = model.generate_content(prompt)
         output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
-        output += response.choices[0].message.content.strip() + "\n"
+        output += response.text.strip() + "\n"
         output += f"URL: {article_link}\n\n---\n\n"
 
     return output
