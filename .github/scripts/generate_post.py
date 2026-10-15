@@ -1,17 +1,17 @@
 """
 Inkspire Weekly Blog Post Generator
-Generates a new Jekyll article targeting USA tattoo audience.
+Uses Google Gemini API (free tier — 1,500 requests/day).
 Runs every Monday via GitHub Actions.
 """
 
-import anthropic
+import google.generativeai as genai
 import datetime
 import os
-import re
 import json
 import random
 
-client = anthropic.Anthropic()
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 AFFILIATE_TAG = "inkspiretatto-20"
 
@@ -39,22 +39,22 @@ TOPIC_POOL = [
 ]
 
 AMAZON_PRODUCTS = [
-    {"name": "Hustle Butter Deluxe", "query": "hustle+butter+tattoo+aftercare", "desc": "The professional standard vegan aftercare balm."},
-    {"name": "Saniderm Healing Bandage", "query": "saniderm+tattoo+bandage", "desc": "Second-skin film for the critical healing phase."},
-    {"name": "Tattoo Sunscreen SPF 50", "query": "tattoo+sunscreen+spf+50", "desc": "UV protection formulated for tattooed skin."},
-    {"name": "Tattoo Goo Aftercare Lotion", "query": "tattoo+goo+aftercare+lotion", "desc": "Long-term moisturiser to keep ink vibrant."},
-    {"name": "H2Ocean Aftercare Spray", "query": "h2ocean+tattoo+aftercare+spray", "desc": "Piercing and tattoo aftercare spray with sea salt."},
+    {"name": "Hustle Butter Deluxe", "query": "hustle+butter+tattoo+aftercare",
+     "img": "https://images.pexels.com/photos/18748260/pexels-photo-18748260.jpeg?auto=compress&cs=tinysrgb&w=200",
+     "desc": "The professional standard vegan aftercare balm."},
+    {"name": "Saniderm Healing Bandage", "query": "saniderm+tattoo+bandage",
+     "img": "https://images.pexels.com/photos/5721552/pexels-photo-5721552.jpeg?auto=compress&cs=tinysrgb&w=200",
+     "desc": "Second-skin film for the critical healing phase."},
+    {"name": "Tattoo Sunscreen SPF 50", "query": "tattoo+sunscreen+spf+50",
+     "img": "https://images.pexels.com/photos/16615433/pexels-photo-16615433.jpeg?auto=compress&cs=tinysrgb&w=200",
+     "desc": "UV protection formulated for tattooed skin."},
+    {"name": "Tattoo Goo Aftercare Lotion", "query": "tattoo+goo+aftercare+lotion",
+     "img": "https://images.pexels.com/photos/9775222/pexels-photo-9775222.jpeg?auto=compress&cs=tinysrgb&w=200",
+     "desc": "Long-term moisturiser to keep ink vibrant."},
 ]
-
-SYSTEM_PROMPT = """You are a professional tattoo content writer for Inkspire, a US-focused tattoo inspiration website.
-Write engaging, authoritative articles targeting a USA audience aged 18-35 who love tattoos.
-Your writing style: confident, knowledgeable, conversational — like a trusted tattoo artist giving advice.
-Include specific tips that feel insider and useful. Always write in HTML suitable for Jekyll.
-Amazon affiliate tag: """ + AFFILIATE_TAG
 
 
 def pick_topic():
-    """Pick a topic we haven't used recently (simple: pick randomly from pool)."""
     used_file = ".github/scripts/used_topics.json"
     try:
         with open(used_file) as f:
@@ -69,7 +69,6 @@ def pick_topic():
 
     topic = random.choice(available)
     used.append(topic[1])
-    # Keep only last 8 to allow recycling
     used = used[-8:]
 
     os.makedirs(os.path.dirname(used_file), exist_ok=True)
@@ -83,35 +82,29 @@ def generate_article(topic):
     title, slug, tag, read_time, category, hero_image, hero_alt = topic
     product = random.choice(AMAZON_PRODUCTS)
 
-    prompt = f"""Write a complete, SEO-optimised article for Inkspire about: "{title}"
+    prompt = f"""You are a professional tattoo content writer for Inkspire, a US-focused tattoo website targeting an audience aged 18-35.
+Write a complete, SEO-optimised article about: "{title}"
 
 Requirements:
-- 700-900 words of real, useful content
-- Target keyword: "{title.lower()}"
-- Include 4-6 H2 headings
-- One <div class="tip-box"> with a pro tip
-- One product callout using this exact HTML structure:
+- 700-900 words of useful, engaging content
+- Target keyword in first paragraph: "{title.lower()}"
+- 4-6 H2 headings using <h2> tags
+- One tip box: <div class="tip-box"><strong>Pro Tip</strong><p>tip content here</p></div>
+- One product callout using EXACTLY this HTML (do not change any class names or structure):
 <div class="product-callout">
-  <img src="https://images.pexels.com/photos/18748260/pexels-photo-18748260.jpeg?auto=compress&cs=tinysrgb&w=200" alt="{product['name']}">
+  <img src="{product['img']}" alt="{product['name']}">
   <div class="product-callout-body">
     <div class="product-callout-name">{product['name'].upper()}</div>
     <div class="product-callout-desc">{product['desc']}</div>
     <a href="https://www.amazon.com/s?k={product['query']}&tag={AFFILIATE_TAG}" target="_blank" rel="noopener nofollow" class="btn-buy">Shop on Amazon →</a>
   </div>
 </div>
-- End with an encouraging closing paragraph
-- Output ONLY the HTML body content — no doctype, no html/head/body tags, no front matter
-- Use <p>, <h2>, <h3>, <ul>, <li> tags
-- Do not add inline styles or class names except tip-box and product-callout as shown above"""
+- Writing style: confident, knowledgeable, conversational — like a trusted tattoo artist
+- Output ONLY the HTML body content — no doctype, html, head, body tags, no front matter, no markdown
+- Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above"""
 
-    message = client.messages.create(
-        model="claude-opus-4-5",
-        max_tokens=2000,
-        system=SYSTEM_PROMPT,
-        messages=[{"role": "user", "content": prompt}]
-    )
-
-    return message.content[0].text
+    response = model.generate_content(prompt)
+    return response.text
 
 
 def save_article(topic, body):
@@ -121,7 +114,7 @@ def save_article(topic, body):
     front_matter = f"""---
 layout: article
 title: "{title}"
-description: "Read our complete guide to {title.lower()} — expert tips, product recommendations, and everything a tattoo enthusiast needs to know."
+description: "Complete guide to {title.lower()} — expert tips, recommendations, and everything a tattoo enthusiast needs to know."
 article_tag: "{tag}"
 read_time: "{read_time}"
 category: "{category}"
@@ -133,31 +126,16 @@ updated: "{today}"
 
 """
 
-    filename = f"{slug}.html"
-    filepath = filename
-
-    with open(filepath, "w", encoding="utf-8") as f:
+    with open(f"{slug}.html", "w", encoding="utf-8") as f:
         f.write(front_matter + body)
 
-    print(f"Created article: {filepath}")
-    return filename
-
-
-def update_homepage_blog_grid(filename, title, tag, read_time):
-    """Append a blog card to the homepage blog grid (optional — only if index.html exists)."""
-    try:
-        with open("index.html", "r", encoding="utf-8") as f:
-            content = f.read()
-        print(f"Homepage exists — you may want to manually add a card for: {title}")
-    except FileNotFoundError:
-        pass
+    print(f"Created: {slug}.html")
 
 
 if __name__ == "__main__":
-    print("Inkspire: generating weekly blog post...")
+    print("Generating weekly blog post...")
     topic = pick_topic()
     print(f"Topic: {topic[0]}")
     body = generate_article(topic)
-    filename = save_article(topic, body)
-    update_homepage_blog_grid(filename, topic[0], topic[2], topic[3])
+    save_article(topic, body)
     print("Done.")

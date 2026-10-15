@@ -1,26 +1,26 @@
 """
 Inkspire Pinterest Pin Pack Generator
-Every Monday, generates 7 ready-to-post Pinterest pins (one per day of the week).
-Output: _pinterest_pins/YYYY-MM-DD.md — a Markdown file you open and copy-paste from.
-No Pinterest API needed — you paste these into Pinterest's own free scheduler.
+Uses Google Gemini API (free tier).
+Generates 7 ready-to-post pins — paste into Pinterest's free built-in scheduler.
 """
 
-import anthropic
+import google.generativeai as genai
 import datetime
 import os
 
-client = anthropic.Anthropic()
+genai.configure(api_key=os.environ["GEMINI_API_KEY"])
+model = genai.GenerativeModel("gemini-1.5-flash")
 
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
 WEEKLY_THEMES = [
-    ("Monday Motivation", "tattoo inspiration and motivation for people thinking about getting their first tattoo"),
-    ("Style Tuesday", "a specific tattoo style (fine line, blackwork, Japanese, geometric, watercolour, etc.)"),
-    ("Wednesday Wisdom", "tattoo aftercare tips and how to keep tattoos looking fresh"),
-    ("Trend Thursday", "trending tattoo designs for 2025, popular in the USA right now"),
+    ("Monday Motivation", "tattoo inspiration and motivation for people thinking about getting inked"),
+    ("Style Tuesday", "a specific tattoo style — fine line, blackwork, Japanese, geometric, or watercolour"),
+    ("Wednesday Wisdom", "tattoo aftercare tips and how to keep tattoos looking fresh long-term"),
+    ("Trend Thursday", "trending tattoo designs in the USA right now in 2025"),
     ("Artist Friday", "how to find, vet, and book the right tattoo artist"),
-    ("Weekend Inspo", "tattoo placement ideas and body art inspiration for the weekend"),
-    ("Sunday Spotlight", "a featured deep-dive into one tattoo topic — educational and shareable"),
+    ("Weekend Inspo", "tattoo placement ideas and body art inspiration"),
+    ("Sunday Spotlight", "an educational deep-dive into one tattoo topic"),
 ]
 
 ARTICLE_LINKS = [
@@ -30,73 +30,56 @@ ARTICLE_LINKS = [
     f"{SITE_URL}/fine-line-guide.html",
 ]
 
-SYSTEM_PROMPT = """You are a Pinterest content expert specialising in tattoo content for a USA audience.
-Write compelling Pinterest pin copy that drives saves and clicks.
-Pinterest pins that perform best:
-- Lead with a benefit or curiosity hook
-- Include 3-5 relevant hashtags targeting US tattoo community
-- Have a clear call to action linking back to the website
-- Use ALL CAPS for emphasis sparingly
-- Feel personal and enthusiastic, not corporate
-- 150-300 characters for description (Pinterest optimal length)"""
-
 
 def generate_pin_pack(week_start: datetime.date) -> str:
-    pins_text = f"# Inkspire Pinterest Pin Pack — Week of {week_start.isoformat()}\n\n"
-    pins_text += "_Copy these into Pinterest's scheduler: pinterest.com/content/scheduled_\n\n"
-    pins_text += "---\n\n"
+    output = f"# Inkspire Pinterest Pin Pack — Week of {week_start.isoformat()}\n\n"
+    output += "_Paste each pin into: pinterest.com/content/scheduled (free scheduler)_\n\n---\n\n"
 
     for i, (day_name, theme) in enumerate(WEEKLY_THEMES):
         pin_date = week_start + datetime.timedelta(days=i)
         article_link = ARTICLE_LINKS[i % len(ARTICLE_LINKS)]
 
-        prompt = f"""Write ONE Pinterest pin for Inkspire tattoo website.
+        prompt = f"""You are a Pinterest expert writing for Inkspire, a tattoo inspiration website targeting USA tattoo fans aged 18-35.
 
-Day: {day_name} ({pin_date.strftime('%B %d, %Y')})
+Write ONE Pinterest pin for: {day_name} ({pin_date.strftime('%B %d, %Y')})
 Theme: {theme}
-Link this pin to: {article_link}
+Link: {article_link}
 
-Format your response EXACTLY like this (no extra text):
-TITLE: [pin title, max 100 chars]
-DESCRIPTION: [engaging description 150-250 chars with 4-5 hashtags]
-BOARD: [suggest which Pinterest board name to post to]
-IMAGE IDEA: [one sentence describing the ideal image for this pin — what to search on Pexels/Unsplash]"""
+Rules:
+- Pinterest description: 150-250 characters max
+- Include 4-5 hashtags (mix popular + niche: #tattoo #tattooinspo #tattooideas + niche ones)
+- Hook with a benefit or curiosity, not a generic statement
+- Suggest a board name from: Tattoo Ideas, Tattoo Aftercare, Tattoo Styles, Tattoo Inspiration, Fine Line Tattoos
 
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=300,
-            system=SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}]
-        )
+Reply in EXACTLY this format, no extra text:
+TITLE: [max 100 chars]
+DESCRIPTION: [150-250 chars + hashtags]
+BOARD: [board name]
+IMAGE: [one sentence: what image to search for on Pexels or Unsplash]"""
 
-        pin_content = message.content[0].text
-        pins_text += f"## {day_name} — {pin_date.strftime('%A, %B %d')}\n\n"
-        pins_text += f"{pin_content}\n"
-        pins_text += f"URL: {article_link}\n"
-        pins_text += "\n---\n\n"
+        response = model.generate_content(prompt)
+        output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
+        output += response.text.strip() + "\n"
+        output += f"URL: {article_link}\n\n---\n\n"
 
-    return pins_text
+    return output
 
 
 def save_pin_pack(content: str, week_start: datetime.date):
-    output_dir = "_pinterest_pins"
-    os.makedirs(output_dir, exist_ok=True)
-    filename = f"{output_dir}/{week_start.isoformat()}.md"
-
-    with open(filename, "w", encoding="utf-8") as f:
+    os.makedirs("_pinterest_pins", exist_ok=True)
+    path = f"_pinterest_pins/{week_start.isoformat()}.md"
+    with open(path, "w", encoding="utf-8") as f:
         f.write(content)
-
-    print(f"Pinterest pin pack saved: {filename}")
-    print("Open this file and paste each pin into: https://pinterest.com/content/scheduled")
+    print(f"Pin pack saved: {path}")
+    print("Open it and paste into: https://pinterest.com/content/scheduled")
 
 
 if __name__ == "__main__":
     today = datetime.date.today()
-    # Start from next Monday
-    days_until_monday = (7 - today.weekday()) % 7
-    week_start = today + datetime.timedelta(days=days_until_monday if days_until_monday else 7)
+    days_ahead = (7 - today.weekday()) % 7
+    week_start = today + datetime.timedelta(days=days_ahead if days_ahead else 7)
 
-    print(f"Inkspire: generating Pinterest pin pack for week of {week_start}...")
+    print(f"Generating Pinterest pin pack for week of {week_start}...")
     content = generate_pin_pack(week_start)
     save_pin_pack(content, week_start)
     print("Done.")
