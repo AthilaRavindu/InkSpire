@@ -6,10 +6,10 @@ Generates 7 ready-to-post pins — paste into Pinterest's free built-in schedule
 
 import os
 import datetime
-import google.generativeai as genai
+from google import genai
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-2.5-flash")
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+MODEL = "gemini-3.8-flash"
 
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
@@ -57,7 +57,7 @@ DESCRIPTION: [description + hashtags]
 BOARD: [board name]
 IMAGE: [image search suggestion]"""
 
-        response = model.generate_content(prompt)
+        response = client.models.generate_content(model=MODEL, contents=prompt)
         output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
         output += response.text.strip() + "\n"
         output += f"URL: {article_link}\n\n---\n\n"

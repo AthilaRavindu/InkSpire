@@ -8,10 +8,10 @@ import os
 import json
 import random
 import datetime
-import google.generativeai as genai
+from google import genai
 
-genai.configure(api_key=os.environ["GEMINI_API_KEY"])
-model = genai.GenerativeModel("gemini-2.5-flash")
+client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
+MODEL = "gemini-3.8-flash"
 
 AFFILIATE_TAG = "inkspiretatto-20"
 
@@ -105,7 +105,7 @@ Requirements:
 - Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above
 - Do not add inline styles"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=MODEL, contents=prompt)
     return response.text
 
 
