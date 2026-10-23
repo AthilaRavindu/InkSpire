@@ -11,7 +11,7 @@ from google import genai
 from google.genai import errors as genai_errors
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-MODEL = "gemini-3.8-flash"
+MODEL = "gemini-2.0-flash"
 
 
 def generate_with_retry(prompt, retries=4, delay=30):
