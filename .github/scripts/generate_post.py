@@ -5,13 +5,28 @@ No credit card needed. 1,500 free requests/day.
 """
 
 import os
+import time
 import json
 import random
 import datetime
 from google import genai
+from google.genai import errors as genai_errors
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 MODEL = "gemini-3.8-flash"
+
+
+def generate_with_retry(prompt, retries=4, delay=30):
+    for attempt in range(retries):
+        try:
+            response = client.models.generate_content(model=MODEL, contents=prompt)
+            return response.text
+        except genai_errors.ServerError as e:
+            if attempt < retries - 1:
+                print(f"Server busy (attempt {attempt + 1}/{retries}), retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                raise e
 
 AFFILIATE_TAG = "inkspiretatto-20"
 
@@ -105,8 +120,7 @@ Requirements:
 - Use only <p>, <h2>, <h3>, <ul>, <li> tags plus the two special components above
 - Do not add inline styles"""
 
-    response = client.models.generate_content(model=MODEL, contents=prompt)
-    return response.text
+    return generate_with_retry(prompt)
 
 
 def save_article(topic, body):

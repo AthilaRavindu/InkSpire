@@ -5,11 +5,26 @@ Generates 7 ready-to-post pins — paste into Pinterest's free built-in schedule
 """
 
 import os
+import time
 import datetime
 from google import genai
+from google.genai import errors as genai_errors
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
 MODEL = "gemini-3.8-flash"
+
+
+def generate_with_retry(prompt, retries=4, delay=30):
+    for attempt in range(retries):
+        try:
+            response = client.models.generate_content(model=MODEL, contents=prompt)
+            return response.text
+        except genai_errors.ServerError as e:
+            if attempt < retries - 1:
+                print(f"Server busy (attempt {attempt + 1}/{retries}), retrying in {delay}s...")
+                time.sleep(delay)
+            else:
+                raise e
 
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
@@ -57,10 +72,11 @@ DESCRIPTION: [description + hashtags]
 BOARD: [board name]
 IMAGE: [image search suggestion]"""
 
-        response = client.models.generate_content(model=MODEL, contents=prompt)
+        pin_text = generate_with_retry(prompt)
         output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
-        output += response.text.strip() + "\n"
+        output += pin_text.strip() + "\n"
         output += f"URL: {article_link}\n\n---\n\n"
+        time.sleep(5)  # avoid hitting rate limits between pins
 
     return output
 
