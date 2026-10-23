@@ -1,7 +1,6 @@
 """
 Inkspire Weekly Blog Post Generator
-Uses Google Gemini 2.5 Flash — permanently free tier (aistudio.google.com)
-No credit card needed. 1,500 free requests/day.
+Uses Google Gemini free tier (aistudio.google.com) — no credit card needed.
 """
 
 import os
@@ -13,20 +12,41 @@ from google import genai
 from google.genai import errors as genai_errors
 
 client = genai.Client(api_key=os.environ["GEMINI_API_KEY"])
-MODEL = "gemini-2.0-flash"
+
+# Google rotates model availability often. Lite variants carry far less traffic,
+# so they are tried first — a 404 means retired, a 503 means overloaded.
+MODEL_CHAIN = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+    "gemini-3.6-flash",
+    "gemini-3.8-flash",
+]
 
 
-def generate_with_retry(prompt, retries=4, delay=30):
-    for attempt in range(retries):
-        try:
-            response = client.models.generate_content(model=MODEL, contents=prompt)
-            return response.text
-        except genai_errors.ServerError as e:
-            if attempt < retries - 1:
-                print(f"Server busy (attempt {attempt + 1}/{retries}), retrying in {delay}s...")
-                time.sleep(delay)
-            else:
-                raise e
+def generate_with_retry(prompt, retries=3, delay=20):
+    last_error = None
+    for model_name in MODEL_CHAIN:
+        for attempt in range(retries):
+            try:
+                response = client.models.generate_content(model=model_name, contents=prompt)
+                print(f"Generated using {model_name}")
+                return response.text
+            except genai_errors.ClientError as e:
+                print(f"{model_name} unavailable ({e.code}) — trying next model")
+                last_error = e
+                break
+            except genai_errors.ServerError as e:
+                last_error = e
+                if attempt < retries - 1:
+                    print(f"{model_name} busy, retry {attempt + 1}/{retries} in {delay}s...")
+                    time.sleep(delay)
+                else:
+                    print(f"{model_name} still busy — trying next model")
+
+    print("\nAll models failed. Models visible to this API key:")
+    for m in client.models.list():
+        print(f"  {m.name}")
+    raise last_error
 
 AFFILIATE_TAG = "inkspiretatto-20"
 
