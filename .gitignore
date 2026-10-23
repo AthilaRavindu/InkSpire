@@ -4,3 +4,5 @@ _site/
 .jekyll-metadata
 Gemfile.lock
 .github/scripts/used_topics.json
+__pycache__/
+*.pyc
