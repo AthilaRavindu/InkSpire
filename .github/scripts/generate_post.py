@@ -113,16 +113,30 @@ def pick_topic():
     return topic
 
 
+INTERNAL_LINKS = [
+    ("aftercare-guide.html", "tattoo aftercare guide"),
+    ("fine-line-guide.html", "fine line tattoo guide"),
+    ("find-tattoo-artist.html", "how to find a tattoo artist"),
+    ("tattoo-trends-2025.html", "2025 tattoo trends"),
+]
+
+
 def generate_article(topic):
     title, slug, tag, read_time, category, hero_image, hero_alt = topic
     product = random.choice(AMAZON_PRODUCTS)
+    links = random.sample(INTERNAL_LINKS, 2)
+    link_text = "\n".join(f'  <a href="/InkSpire/{url}">{anchor}</a>' for url, anchor in links)
 
     prompt = f"""You are a professional tattoo content writer for Inkspire, a US tattoo website for an audience aged 18-35.
 Write a complete, SEO-optimised article about: "{title}"
 
 Requirements:
 - 700-900 words of genuinely useful content
-- Use the keyword "{title.lower()}" naturally in the first paragraph
+- Use the keyword "{title.lower()}" naturally in the first paragraph as PLAIN TEXT, never as a link
+- NEVER invent, guess, or make up any URL or domain name. The ONLY links allowed in the
+  entire article are the Amazon product link below and these two internal links, each used
+  once, placed naturally where the topic fits:
+{link_text}
 - 4-6 H2 headings using <h2> tags
 - One tip box using EXACTLY this HTML:
 <div class="tip-box"><strong>Pro Tip</strong><p>your tip here</p></div>
