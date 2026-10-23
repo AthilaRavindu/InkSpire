@@ -89,12 +89,15 @@ Rules:
   what the linked page delivers. Do not tease a different topic in the call to action.
 - Suggest one board: Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
 - Image: one sentence describing what to search on Pexels or Unsplash
+- Image query: 2-4 plain keywords for a stock photo search, always including the word
+  tattoo. No punctuation, no adjectives like "beautiful", no sentence.
 
 Reply in EXACTLY this format, no extra text:
 TITLE: [title]
 DESCRIPTION: [description + hashtags]
 BOARD: [board name]
-IMAGE: [image search suggestion]"""
+IMAGE: [image search suggestion]
+IMAGE_QUERY: [2-4 keywords]"""
 
         pin_text = generate_with_retry(prompt)
         output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
