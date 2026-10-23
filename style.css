@@ -282,6 +282,14 @@ button{cursor:pointer;font-family:inherit;}
 .highlight-box{background:var(--surface);border-left:4px solid var(--accent);border-radius:0 var(--r-lg) var(--r-lg) 0;padding:1.2rem 1.5rem;margin:1.5rem 0 2rem;}
 .highlight-box p{margin:0;font-size:1.02rem;}
 
+.archive-link-wrap{text-align:center;margin-top:2.2rem;}
+.archive-link{display:inline-block;font-family:var(--font-u);font-size:.9rem;font-weight:600;letter-spacing:.04em;color:var(--accent);border:1px solid var(--accent);border-radius:var(--r-lg);padding:.75rem 1.8rem;transition:background .2s,color .2s;}
+.archive-link:hover{background:var(--accent);color:#fff;}
+
+/* ARCHIVE PAGE (all guides) */
+.archive-wrap{max-width:1180px;margin:0 auto;padding:3rem 1.5rem 5rem;}
+.archive-intro{font-family:var(--font-e);font-size:1rem;color:var(--ink-muted);margin-bottom:2.2rem;padding-bottom:1.5rem;border-bottom:1px solid var(--border);}
+
 /* ARTICLE / LEGAL FOOTER (inner pages) */
 .page-footer{background:var(--ink);color:rgba(255,255,255,.6);text-align:center;padding:2rem 1.5rem;font-size:.82rem;}
 .page-footer a{color:var(--gold);}

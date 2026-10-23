@@ -4,6 +4,7 @@ Uses Google Gemini free tier (aistudio.google.com) — no credit card needed.
 """
 
 import os
+import re
 import time
 import json
 import random
@@ -182,10 +183,71 @@ updated: "{today}"
     print(f"Created: {slug}.html")
 
 
+def extract_excerpt(body, limit=140):
+    match = re.search(r"<p>(.*?)</p>", body, re.DOTALL)
+    if not match:
+        return "A complete guide from the Inkspire editorial team."
+    text = re.sub(r"<[^>]+>", "", match.group(1)).strip()
+    text = re.sub(r"\s+", " ", text)
+    if len(text) > limit:
+        text = text[:limit].rsplit(" ", 1)[0] + "..."
+    return text
+
+
+def add_to_homepage(topic, body, keep=6):
+    """Without a homepage link a new article is an orphan page: readers cannot
+    reach it and search engines heavily discount it."""
+    title, slug, tag, read_time, category, hero_image, hero_alt = topic
+
+    with open("index.html", encoding="utf-8") as f:
+        html = f.read()
+
+    if f'href="{slug}.html"' in html:
+        print(f"{slug}.html already linked from homepage")
+        return
+
+    thumb = hero_image.replace("w=1400", "w=600&h=340")
+    excerpt = extract_excerpt(body)
+
+    card = (
+        '      <article class="blog-card">\n'
+        f'        <div class="blog-thumb"><img src="{thumb}" alt="{hero_alt}" loading="lazy"></div>\n'
+        '        <div class="blog-body">\n'
+        f'          <div class="blog-tag">{tag}</div>\n'
+        f'          <h3 class="blog-title">{title.upper()}</h3>\n'
+        f'          <p class="blog-excerpt">{excerpt}</p>\n'
+        f'          <div class="blog-footer"><div class="blog-meta"><span>{read_time}</span>'
+        f'<span>·</span><span>{category}</span></div>'
+        f'<a href="{slug}.html" class="blog-read">Read →</a></div>\n'
+        '        </div>\n'
+        '      </article>\n'
+    )
+
+    anchor = '<div class="blog-grid">\n'
+    if anchor not in html:
+        print("Could not find blog grid on homepage — skipping")
+        return
+    html = html.replace(anchor, anchor + card, 1)
+
+    grid = re.search(r'(<div class="blog-grid">\n)(.*?)(^    </div>)',
+                     html, re.DOTALL | re.MULTILINE)
+    if grid:
+        cards = re.findall(r'      <article class="blog-card">.*?      </article>\n',
+                           grid.group(2), re.DOTALL)
+        if len(cards) > keep:
+            html = html[:grid.start(2)] + "".join(cards[:keep]) + html[grid.end(2):]
+            print(f"Homepage trimmed to the {keep} newest guides")
+
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html)
+    print(f"Added {slug}.html to homepage")
+
+
 if __name__ == "__main__":
     print("Generating weekly blog post...")
     topic = pick_topic()
     print(f"Topic: {topic[0]}")
     body = generate_article(topic)
     save_article(topic, body)
+    add_to_homepage(topic, body)
     print("Done.")
