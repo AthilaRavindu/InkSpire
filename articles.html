@@ -14,7 +14,15 @@ description: "Every guide on Inkspire — tattoo styles, aftercare, placement, a
   <h1 class="page-title">ALL GUIDES</h1>
   <p class="archive-intro">Every tattoo guide we've published — styles, aftercare, placement, pricing, and artist advice.</p>
 
-  {% assign guides = site.pages | where: "layout", "article" | sort: "date" | reverse %}
+  {%- comment -%}
+  Liquid's sort drops entries whose key is nil, so an article missing a date
+  would disappear from this list silently. Dated ones are sorted newest first,
+  then any undated ones are appended rather than lost.
+  {%- endcomment -%}
+  {% assign all_guides = site.pages | where: "layout", "article" %}
+  {% assign dated = all_guides | where_exp: "g", "g.date" | sort: "date" | reverse %}
+  {% assign undated = all_guides | where_exp: "g", "g.date == nil" %}
+  {% assign guides = dated | concat: undated %}
   <div class="blog-grid">
     {% for guide in guides %}
     <article class="blog-card">
