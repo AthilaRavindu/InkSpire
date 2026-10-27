@@ -1,0 +1,52 @@
+name: Verify Site
+
+# A UTF-8 BOM in front of "---" makes Jekyll skip a file's front matter and
+# serve it raw. Pages still return HTTP 200, so this is invisible to uptime
+# checks — it broke every page on this site for weeks before anyone noticed.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check for byte order marks and missing front matter
+        run: |
+          python - <<'PY'
+          import glob, sys, os
+
+          problems = []
+          targets = sorted(
+              glob.glob("*.html") + glob.glob("*.xml") + glob.glob("*.txt")
+              + glob.glob("_layouts/*.html") + glob.glob("_includes/*.html")
+          )
+
+          for path in targets:
+              with open(path, "rb") as f:
+                  head = f.read(400)
+
+              if head.startswith(b"\xef\xbb\xbf"):
+                  problems.append(f"{path}: starts with a UTF-8 BOM — Jekyll will serve it raw")
+                  continue
+
+              # Every page we publish is templated; a stray file without front
+              # matter is almost always a mistake rather than a static asset.
+              if path.endswith(".html") and not head.lstrip().startswith(b"---"):
+                  if os.path.dirname(path) in ("_layouts", "_includes"):
+                      continue
+                  problems.append(f"{path}: no front matter — will not get a layout")
+
+          if problems:
+              print("Site verification failed:\n")
+              for p in problems:
+                  print("  " + p)
+              sys.exit(1)
+
+          print(f"All {len(targets)} files OK — no BOMs, front matter intact")
+          PY
