@@ -9,6 +9,15 @@ email: buildsenseit@gmail.com
 twitter_username: inkspire
 pinterest_username: PinTastic00
 
+# Paste the Measurement ID from Google Analytics (looks like G-XXXXXXXXXX).
+# Analytics stays off entirely while this is empty.
+google_analytics: ""
+
+# Paste the content value Pinterest gives you under
+# Settings > Claimed accounts > Claim website > Add HTML tag.
+# Only the content value, not the whole <meta> tag.
+pinterest_verify: ""
+
 # Build settings
 markdown: kramdown
 highlighter: rouge

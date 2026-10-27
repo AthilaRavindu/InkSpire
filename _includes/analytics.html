@@ -1,0 +1,42 @@
+{%- comment -%}
+  Renders nothing until google_analytics is set in _config.yml, so the site
+  stays clean before the property exists.
+
+  Beyond pageviews this tracks two things the dashboard cannot infer on its own:
+  which Amazon product links get clicked (the revenue signal) and which articles
+  people actually read to the end.
+{%- endcomment -%}
+{%- if site.google_analytics %}
+<script async src="https://www.googletagmanager.com/gtag/js?id={{ site.google_analytics }}"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', '{{ site.google_analytics }}');
+
+  document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('a[href*="amazon."]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        var card = link.closest('.product-card, .product-callout');
+        var nameEl = card && card.querySelector('.product-name, .product-callout-name');
+        gtag('event', 'affiliate_click', {
+          product: nameEl ? nameEl.textContent.trim() : 'unknown',
+          page: document.title
+        });
+      });
+    });
+
+    var body = document.querySelector('.article-body');
+    if (!body) return;
+    var fired = false;
+    window.addEventListener('scroll', function () {
+      if (fired) return;
+      var end = body.offsetTop + body.offsetHeight;
+      if (window.scrollY + window.innerHeight >= end - 100) {
+        fired = true;
+        gtag('event', 'article_finished', { page: document.title });
+      }
+    }, { passive: true });
+  });
+</script>
+{%- endif %}
