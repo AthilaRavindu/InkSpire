@@ -54,15 +54,15 @@ AFFILIATE_TAG = "inkspiretatto-20"
 TOPIC_POOL = [
     ("Tattoo Placement Guide: Best Spots for Your First Tattoo", "placement-guide", "Placement", "7 min", "Beginner Guide",
      "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80", "tattoo placement guide"),
-    ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Style Guide",
+    ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Inspiration",
      "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=1400&q=80", "watercolour tattoo art"),
     ("Traditional vs Neo-Traditional Tattoos: What's the Difference?", "traditional-vs-neo-traditional", "Style Guide", "6 min", "Style Deep-Dive",
      "https://images.unsplash.com/photo-1562155618-e1a8e303fc0a?auto=format&fit=crop&w=1400&q=80", "traditional tattoo style"),
     ("How Much Does a Tattoo Cost? 2025 Pricing Guide", "tattoo-cost-guide", "Advice", "5 min", "Budgeting",
      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1400&q=80", "tattoo studio pricing"),
-    ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Education",
+    ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Ink & Colour",
      "https://images.unsplash.com/photo-1590246814883-57c511e0b6d0?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
-    ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Style Guide",
+    ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Design",
      "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=1400&q=80", "geometric tattoo pattern"),
     ("Japanese Tattoo Style: History, Meanings, and Modern Takes", "japanese-tattoo-guide", "Style Guide", "10 min", "Cultural Guide",
      "https://images.unsplash.com/photo-1579208030886-b937da0925dc?auto=format&fit=crop&w=1400&q=80", "Japanese tattoo irezumi"),
@@ -158,14 +158,14 @@ Requirements:
     return generate_with_retry(prompt)
 
 
-def save_article(topic, body):
+def save_article(topic, body, description):
     title, slug, tag, read_time, category, hero_image, hero_alt = topic
     today = datetime.date.today().isoformat()
 
     front_matter = f"""---
 layout: article
 title: "{title}"
-description: "Complete guide to {title.lower()} — expert tips, recommendations, and everything a tattoo enthusiast needs to know."
+description: "{description.replace('"', "'")}"
 article_tag: "{tag}"
 read_time: "{read_time}"
 category: "{category}"
@@ -183,18 +183,51 @@ updated: "{today}"
     print(f"Created: {slug}.html")
 
 
-def extract_excerpt(body, limit=140):
-    match = re.search(r"<p>(.*?)</p>", body, re.DOTALL)
-    if not match:
-        return "A complete guide from the Inkspire editorial team."
-    text = re.sub(r"<[^>]+>", "", match.group(1)).strip()
+def write_card_copy(title, body):
+    """An article's opening paragraph is a narrative warm-up, not a summary, so
+    slicing it produced cards that trailed off mid-sentence. Ask for purpose-
+    written copy instead and fall back to a clean slice only if parsing fails."""
+    plain = re.sub(r"<[^>]+>", " ", body)
+    plain = re.sub(r"\s+", " ", plain).strip()[:2500]
+
+    prompt = f"""Here is a tattoo article titled "{title}":
+
+{plain}
+
+Write two things about it, for a site called Inkspire.
+
+EXCERPT: one complete sentence, 90-120 characters, saying what the reader
+will get out of the article. Concrete and specific — name the actual things
+covered. No ellipsis, no trailing off, never repeat the title back.
+Match this style: "Day-by-day healing instructions, best products, what to
+avoid, and how to keep your ink vibrant for life."
+
+DESCRIPTION: one sentence, 140-160 characters, for the Google search result.
+Natural English a person would read aloud. Do not stuff the title into it.
+
+Reply in EXACTLY this format and nothing else:
+EXCERPT: [text]
+DESCRIPTION: [text]"""
+
+    try:
+        reply = generate_with_retry(prompt)
+        excerpt = re.search(r"^EXCERPT:\s*(.+)$", reply, re.MULTILINE)
+        description = re.search(r"^DESCRIPTION:\s*(.+)$", reply, re.MULTILINE)
+        if excerpt and description:
+            return excerpt.group(1).strip().strip('"'), description.group(1).strip().strip('"')
+        print("Card copy came back malformed — falling back")
+    except Exception as e:
+        print(f"Card copy generation failed ({e}) — falling back")
+
+    first = re.search(r"<p>(.*?)</p>", body, re.DOTALL)
+    text = re.sub(r"<[^>]+>", "", first.group(1)).strip() if first else ""
     text = re.sub(r"\s+", " ", text)
-    if len(text) > limit:
-        text = text[:limit].rsplit(" ", 1)[0] + "..."
-    return text
+    if len(text) > 140:
+        text = text[:140].rsplit(" ", 1)[0].rstrip(",;:") + "."
+    return (text or f"A complete guide to {title.lower()}."), text[:155]
 
 
-def add_to_homepage(topic, body, keep=6):
+def add_to_homepage(topic, excerpt, keep=6):
     """Without a homepage link a new article is an orphan page: readers cannot
     reach it and search engines heavily discount it."""
     title, slug, tag, read_time, category, hero_image, hero_alt = topic
@@ -207,7 +240,9 @@ def add_to_homepage(topic, body, keep=6):
         return
 
     thumb = hero_image.replace("w=1400", "w=600&h=340")
-    excerpt = extract_excerpt(body)
+    meta_bits = f'<span>{read_time}</span>'
+    if category.strip().lower() != tag.strip().lower():
+        meta_bits += f'<span>·</span><span>{category}</span>'
 
     card = (
         '      <article class="blog-card">\n'
@@ -216,8 +251,7 @@ def add_to_homepage(topic, body, keep=6):
         f'          <div class="blog-tag">{tag}</div>\n'
         f'          <h3 class="blog-title">{title.upper()}</h3>\n'
         f'          <p class="blog-excerpt">{excerpt}</p>\n'
-        f'          <div class="blog-footer"><div class="blog-meta"><span>{read_time}</span>'
-        f'<span>·</span><span>{category}</span></div>'
+        f'          <div class="blog-footer"><div class="blog-meta">{meta_bits}</div>'
         f'<a href="{slug}.html" class="blog-read">Read →</a></div>\n'
         '        </div>\n'
         '      </article>\n'
@@ -248,6 +282,8 @@ if __name__ == "__main__":
     topic = pick_topic()
     print(f"Topic: {topic[0]}")
     body = generate_article(topic)
-    save_article(topic, body)
-    add_to_homepage(topic, body)
+    excerpt, description = write_card_copy(topic[0], body)
+    print(f"Excerpt: {excerpt}")
+    save_article(topic, body, description)
+    add_to_homepage(topic, excerpt)
     print("Done.")
