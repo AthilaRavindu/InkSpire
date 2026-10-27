@@ -11,12 +11,12 @@ pinterest_username: PinTastic00
 
 # Paste the Measurement ID from Google Analytics (looks like G-XXXXXXXXXX).
 # Analytics stays off entirely while this is empty.
-google_analytics: ""
+google_analytics: "G-CMR2PS9721"
 
 # Paste the content value Pinterest gives you under
 # Settings > Claimed accounts > Claim website > Add HTML tag.
 # Only the content value, not the whole <meta> tag.
-pinterest_verify: ""
+pinterest_verify: "1ec3d46a80dc0b624bf3d7178bb638fd"
 
 # Build settings
 markdown: kramdown
