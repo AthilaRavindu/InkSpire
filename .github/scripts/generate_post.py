@@ -57,34 +57,20 @@ TOPIC_POOL = [
      "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80", "tattoo placement guide"),
     ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Inspiration",
      "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=1400&q=80", "watercolour tattoo art"),
-    ("Traditional vs Neo-Traditional Tattoos: What's the Difference?", "traditional-vs-neo-traditional", "Style Guide", "6 min", "Style Deep-Dive",
-     "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80", "traditional tattoo style"),
     ("How Much Does a Tattoo Cost? 2025 Pricing Guide", "tattoo-cost-guide", "Advice", "5 min", "Budgeting",
      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1400&q=80", "tattoo studio pricing"),
     ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Ink & Colour",
      "https://images.unsplash.com/photo-1562379825-415aea84ebcf?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
     ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Design",
-     "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=1400&q=80", "geometric tattoo pattern"),
-    ("Japanese Tattoo Style: History, Meanings, and Modern Takes", "japanese-tattoo-guide", "Style Guide", "10 min", "Cultural Guide",
-     "https://images.unsplash.com/photo-1579208030886-b937da0925dc?auto=format&fit=crop&w=1400&q=80", "Japanese tattoo irezumi"),
+     "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80", "geometric back tattoo"),
     ("Tattoo Touch-Ups: When, Why, and How Much They Cost", "tattoo-touch-up-guide", "Aftercare", "6 min", "Maintenance",
-     "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=1400&q=80", "tattoo touch up"),
+     "https://images.unsplash.com/photo-1552627019-947c3789ffb5?auto=format&fit=crop&w=1400&q=80", "tattoo artist reworking a piece"),
     ("Small Tattoo Ideas That Actually Age Well", "small-tattoo-ideas", "Inspiration", "7 min", "Ideas",
      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=80", "small minimalist tattoo"),
-    ("Blackwork Tattoos: The Ultimate Bold Style Guide", "blackwork-tattoo-guide", "Style Guide", "9 min", "Bold Styles",
-     "https://images.unsplash.com/photo-1557130641-1b14718f096a?auto=format&fit=crop&w=1400&q=80", "blackwork tattoo bold"),
     ("Does Getting a Tattoo Hurt? Pain Chart by Body Part", "tattoo-pain-chart", "Advice", "7 min", "First Timers",
      "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80", "person getting tattooed"),
-    ("How to Prepare for Your First Tattoo Appointment", "first-tattoo-prep", "Advice", "6 min", "First Timers",
-     "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80", "tattoo studio preparation"),
-    ("Tattoo Removal and Cover-Ups: What Your Options Are", "tattoo-coverup-removal", "Education", "8 min", "Fixing Mistakes",
-     "https://images.unsplash.com/photo-1597020976626-04261b0fac2a?auto=format&fit=crop&w=1400&q=80", "large cover up tattoo"),
-    ("Matching Tattoos: Ideas for Couples, Friends and Family", "matching-tattoos", "Inspiration", "6 min", "Ideas",
-     "https://images.unsplash.com/photo-1600716741845-3291dc455e67?auto=format&fit=crop&w=1400&q=80", "matching tattoos on two arms"),
-    ("Sleeve Tattoos: Planning a Full Arm That Works Together", "sleeve-tattoo-guide", "Style Guide", "10 min", "Big Pieces",
-     "https://images.unsplash.com/photo-1701269395744-32e3c1d11645?auto=format&fit=crop&w=1400&q=80", "full tattoo sleeve"),
     ("Script and Lettering Tattoos: Fonts, Placement and Mistakes", "script-tattoo-guide", "Style Guide", "7 min", "Lettering",
-     "https://images.unsplash.com/photo-1566745506623-c87cc03b9e30?auto=format&fit=crop&w=1400&q=80", "script lettering tattoo"),
+     "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80", "script lettering tattoo on a forearm"),
 ]
 
 AMAZON_PRODUCTS = [
@@ -120,10 +106,16 @@ def pick_topic():
     except FileNotFoundError:
         used = []
 
-    available = [t for t in TOPIC_POOL if t[1] not in used]
+    # used_topics.json only remembers what this script generated. Four pool slugs
+    # were also written by hand and published, so without the exists() check a
+    # regenerated article would silently overwrite the live, edited version.
+    available = [t for t in TOPIC_POOL
+                 if t[1] not in used and not os.path.exists(f"{t[1]}.html")]
     if not available:
         used = []
-        available = TOPIC_POOL
+        available = [t for t in TOPIC_POOL if not os.path.exists(f"{t[1]}.html")]
+    if not available:
+        raise SystemExit("Every pool topic is already published — add new topics.")
 
     random.shuffle(available)
     topic = available[0]
