@@ -68,13 +68,22 @@ WEEKLY_THEMES = [
 ]
 
 
+def pin_link(article_page: str, week_start: datetime.date) -> str:
+    """Pinterest's mobile app usually strips the referrer, so pin clicks land in
+    Analytics as "direct" and the pins look like they did nothing. The UTM tags
+    survive that and keep the traffic attributed to Pinterest."""
+    return (f"{SITE_URL}/{article_page}"
+            f"?utm_source=pinterest&utm_medium=social"
+            f"&utm_campaign=pins-{week_start.isoformat()}")
+
+
 def generate_pin_pack(week_start: datetime.date) -> str:
     output = f"# Inkspire Pinterest Pin Pack — Week of {week_start.isoformat()}\n\n"
     output += "_Paste each pin into: pinterest.com/content/scheduled (free scheduler)_\n\n---\n\n"
 
     for i, (day_name, theme, article_page) in enumerate(WEEKLY_THEMES):
         pin_date = week_start + datetime.timedelta(days=i)
-        article_link = f"{SITE_URL}/{article_page}"
+        article_link = pin_link(article_page, week_start)
 
         prompt = f"""You are a Pinterest expert writing for Inkspire, a tattoo inspiration site targeting USA tattoo fans aged 18-35.
 
