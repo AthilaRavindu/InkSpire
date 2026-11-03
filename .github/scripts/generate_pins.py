@@ -1,7 +1,7 @@
 """
 Inkspire Pinterest Pin Pack Generator
 Uses Google Gemini free tier.
-Generates 7 ready-to-post pins — paste into Pinterest's free built-in scheduler.
+Generates 14 ready-to-post pins a week — two a day, each with an AI image prompt.
 """
 
 import os
@@ -46,25 +46,39 @@ def generate_with_retry(prompt, retries=3, delay=20):
         print(f"  {m.name}")
     raise last_error
 
+
 SITE_URL = "https://athilaravindu.github.io/InkSpire"
 
-# Each theme is paired with the article it actually sends readers to, so the
-# pin copy and the destination page always match.
-WEEKLY_THEMES = [
-    ("Monday Motivation", "tattoo inspiration and motivation for people thinking about getting inked",
-     "tattoo-trends-2025.html"),
-    ("Style Tuesday", "the fine line tattoo style — delicate, minimalist, detailed work",
+# Each theme is paired with the article it actually sends readers to, so the pin
+# copy and the destination page always match. Three of these point at guides
+# written specifically to catch the account's best-performing pins.
+DAILY_THEMES = [
+    ("Monday", "the meanings behind symbolic tattoos — doves, lions, broken chains, roses",
+     "tattoo-symbolism-meanings.html"),
+    ("Tuesday", "the fine line tattoo style — delicate, minimalist, detailed work",
      "fine-line-guide.html"),
-    ("Wednesday Wisdom", "tattoo aftercare tips and how to keep tattoos looking fresh long-term",
+    ("Wednesday", "tattoo aftercare and how to keep ink looking fresh long-term",
      "aftercare-guide.html"),
-    ("Trend Thursday", "trending tattoo designs in the USA right now",
+    ("Thursday", "back tattoos — placement, pain levels, and the healing you cannot reach",
+     "back-tattoo-guide.html"),
+    ("Friday", "how to find, vet and book the right tattoo artist",
+     "find-tattoo-artist.html"),
+    ("Saturday", "Japanese irezumi — dragons, koi, tigers, and what the motifs mean",
+     "japanese-tattoo-guide.html"),
+    ("Sunday", "trending tattoo designs in the USA right now",
      "tattoo-trends-2025.html"),
-    ("Artist Friday", "how to find, vet, and book the right tattoo artist",
-     "find-tattoo-artist.html"),
-    ("Weekend Inspo", "tattoo placement ideas — where on the body different styles work best",
-     "fine-line-guide.html"),
-    ("Sunday Spotlight", "what to ask an artist before booking, and how to prepare for a session",
-     "find-tattoo-artist.html"),
+]
+
+# Two pins a day, in the two formats that actually performed on the account.
+# Pins carrying short lettering took the top impression slots; the one on-body
+# photograph took more clicks and saves than anything else posted.
+PIN_FORMATS = [
+    ("Design Card",
+     "a flat tattoo design presented as artwork, with a SHORT phrase of three to five "
+     "words worked into the composition as part of the design"),
+    ("On Body",
+     "a realistic photograph of the finished tattoo on a person, showing the placement "
+     "on the body, with no text anywhere in the image"),
 ]
 
 
@@ -77,42 +91,70 @@ def pin_link(article_page: str, week_start: datetime.date) -> str:
             f"&utm_campaign=pins-{week_start.isoformat()}")
 
 
-def generate_pin_pack(week_start: datetime.date) -> str:
-    output = f"# Inkspire Pinterest Pin Pack — Week of {week_start.isoformat()}\n\n"
-    output += "_Paste each pin into: pinterest.com/content/scheduled (free scheduler)_\n\n---\n\n"
+def build_prompt(pin_date, theme, format_name, format_brief):
+    if format_name == "Design Card":
+        text_rule = ("Work a short phrase of three to five words into the design itself, "
+                     "and state the exact words in quotes.")
+    else:
+        text_rule = "State explicitly that the image contains no text, no lettering and no watermark."
 
-    for i, (day_name, theme, article_page) in enumerate(WEEKLY_THEMES):
-        pin_date = week_start + datetime.timedelta(days=i)
-        article_link = pin_link(article_page, week_start)
+    return f"""You are a Pinterest strategist writing for Inkspire, a tattoo inspiration site targeting USA tattoo fans aged 18-35.
 
-        prompt = f"""You are a Pinterest expert writing for Inkspire, a tattoo inspiration site targeting USA tattoo fans aged 18-35.
-
-Write ONE Pinterest pin for: {day_name} ({pin_date.strftime('%B %d, %Y')})
+Write ONE Pinterest pin for {pin_date.strftime('%A %B %d, %Y')}.
 Theme: {theme}
-Link: {article_link}
+Pin format: {format_brief}
 
-Rules:
+Rules for the copy:
 - Title: max 100 characters, strong curiosity hook
-- Description: 150-250 characters, ends with 4-5 hashtags mixing popular (#tattoo #tattooinspo) and niche ones
-- The title and description must promise ONLY what the theme above covers, since that is
-  what the linked page delivers. Do not tease a different topic in the call to action.
-- Suggest one board: Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
-- Image: one sentence describing what to search on Pexels or Unsplash
-- Image query: 2-4 plain keywords for a stock photo search, always including the word
-  tattoo. No punctuation, no adjectives like "beautiful", no sentence.
+- Description: 150-250 characters, ending in 4-5 hashtags mixing broad (#tattoo #tattooinspo) with niche ones
+- The title and description must promise ONLY what the theme covers, because that is
+  what the linked page delivers. Never tease a different topic in the call to action.
+- Board: pick one of Tattoo Ideas | Tattoo Aftercare | Tattoo Styles | Tattoo Inspiration | Fine Line Tattoos
+
+Rules for the image prompt, which is fed to an AI image generator:
+- Write it as one flowing paragraph of 40-70 words, not a list of tags.
+- Vertical 2:3 composition, since Pinterest crops anything wider.
+- Name the tattoo style, the subject, the body placement, the lighting and the background.
+- Specify black and grey, or a named limited palette. Never just say "colourful".
+- {text_rule}
+- Do not name any real artist, studio, brand or celebrity.
 
 Reply in EXACTLY this format, no extra text:
 TITLE: [title]
 DESCRIPTION: [description + hashtags]
 BOARD: [board name]
-IMAGE: [image search suggestion]
-IMAGE_QUERY: [2-4 keywords]"""
+IMAGE PROMPT: [the image generation prompt]"""
 
-        pin_text = generate_with_retry(prompt)
-        output += f"## {day_name} — {pin_date.strftime('%A %B %d')}\n\n"
-        output += pin_text.strip() + "\n"
-        output += f"URL: {article_link}\n\n---\n\n"
-        time.sleep(5)  # avoid hitting rate limits between pins
+
+def generate_pin_pack(week_start: datetime.date) -> str:
+    header = [
+        f"# Inkspire Pin Pack — Week of {week_start.isoformat()}",
+        "",
+        "_Two pins a day. Generate the image from IMAGE PROMPT, then paste the rest into_",
+        "_pinterest.com/content/scheduled. Post the two a few hours apart, not together._",
+        "",
+        "_Paste the whole URL including the `?utm_...` part — that is what attributes",
+        "the traffic to Pinterest instead of burying it under 'direct'._",
+        "",
+        "---",
+        "",
+    ]
+    output = "\n".join(header)
+
+    for i, (day_name, theme, article_page) in enumerate(DAILY_THEMES):
+        pin_date = week_start + datetime.timedelta(days=i)
+        article_link = pin_link(article_page, week_start)
+        output += f"# {day_name} — {pin_date.strftime('%B %d')}\n\n"
+
+        for format_name, format_brief in PIN_FORMATS:
+            pin_text = generate_with_retry(
+                build_prompt(pin_date, theme, format_name, format_brief))
+            output += f"### {format_name}\n\n"
+            output += pin_text.strip() + "\n"
+            output += f"URL: {article_link}\n\n"
+            time.sleep(5)  # stay under the free-tier rate limit
+
+        output += "---\n\n"
 
     return output
 
