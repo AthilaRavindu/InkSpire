@@ -53,44 +53,44 @@ def generate_with_retry(prompt, retries=3, delay=20):
 AFFILIATE_TAG = "inkspiretatto-20"
 
 TOPIC_POOL = [
-    # (title, slug, article_tag, read_time, category, image_search_phrase, hero_alt)
+    # (title, slug, article_tag, read_time, category, hero_image, hero_alt)
     #
-    # Field 6 is a search phrase, not a URL. resolve_hero() turns it into a real
-    # image at publish time. It used to be a hardcoded stock ID, and six of those
-    # had silently become photographs of something else -- the Japanese guide's
-    # hero was a plate of fish and chips -- while still returning HTTP 200.
+    # Six of the images this pool originally carried had silently become
+    # photographs of something else -- the Japanese guide's hero was a plate of
+    # fish and chips -- while still returning HTTP 200. Every URL below has now
+    # been opened and looked at. Do not add one you have not viewed.
     ("Tattoo Placement Guide: Best Spots for Your First Tattoo", "placement-guide", "Placement", "7 min", "Beginner Guide",
-     "tattoo on arm", "tattoo placement guide"),
+     "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80", "fine line tattoo on a forearm"),
     ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Inspiration",
-     "colourful tattoo", "watercolour tattoo art"),
+     "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=1400&q=80", "watercolour tattoo art"),
     ("Traditional vs Neo-Traditional Tattoos: What's the Difference?", "traditional-vs-neo-traditional", "Style Guide", "6 min", "Style Deep-Dive",
-     "traditional tattoo", "traditional tattoo style"),
+     "https://live.staticflickr.com/65535/52561627575_ff94a01718_b.jpg", "traditional colour tattoos"),
     ("How Much Does a Tattoo Cost? 2025 Pricing Guide", "tattoo-cost-guide", "Advice", "5 min", "Budgeting",
-     "tattoo studio", "tattoo studio pricing"),
+     "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1400&q=80", "tattoo studio pricing"),
     ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Ink & Colour",
-     "tattoo ink", "colourful tattoo ink"),
+     "https://images.unsplash.com/photo-1562379825-415aea84ebcf?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
     ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Design",
-     "geometric tattoo", "geometric tattoo pattern"),
+     "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80", "geometric back tattoo"),
     ("Japanese Tattoo Style: History, Meanings and Modern Takes", "japanese-tattoo-guide", "Style Guide", "10 min", "Cultural Guide",
-     "japanese tattoo", "Japanese tattoo irezumi"),
+     "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=1400&q=80", "detailed ornamental sleeve"),
     ("Tattoo Touch-Ups: When, Why, and How Much They Cost", "tattoo-touch-up-guide", "Aftercare", "6 min", "Maintenance",
-     "tattoo artist working", "tattoo touch up"),
+     "https://live.staticflickr.com/7548/16058781110_029032b185_b.jpg", "artist reworking a tattoo"),
     ("Small Tattoo Ideas That Actually Age Well", "small-tattoo-ideas", "Inspiration", "7 min", "Ideas",
-     "small tattoo", "small minimalist tattoo"),
+     "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=80", "small minimalist tattoo"),
     ("Blackwork Tattoos: The Ultimate Bold Style Guide", "blackwork-tattoo-guide", "Style Guide", "9 min", "Bold Styles",
-     "blackwork tattoo", "blackwork tattoo bold"),
+     "https://images.unsplash.com/photo-1552627019-947c3789ffb5?auto=format&fit=crop&w=1400&q=80", "black and grey tattoo work"),
     ("Does Getting a Tattoo Hurt? Pain Chart by Body Part", "tattoo-pain-chart", "Advice", "7 min", "First Timers",
-     "getting a tattoo", "person getting tattooed"),
+     "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80", "person getting tattooed"),
     ("How to Prepare for Your First Tattoo Appointment", "first-tattoo-prep", "Advice", "6 min", "First Timers",
-     "tattoo shop interior", "tattoo studio preparation"),
+     "https://live.staticflickr.com/65535/52664878201_c4175f047d_b.jpg", "tattooed person waiting"),
     ("Tattoo Removal and Cover-Ups: What Your Options Are", "tattoo-coverup-removal", "Education", "8 min", "Fixing Mistakes",
-     "large arm tattoo", "large cover up tattoo"),
+     "https://live.staticflickr.com/65535/52302686837_bddd4d7f59_b.jpg", "dense colourful leg tattoos"),
     ("Matching Tattoos: Ideas for Couples, Friends and Family", "matching-tattoos", "Inspiration", "6 min", "Ideas",
-     "couple tattoo", "matching tattoos on two arms"),
+     "https://images.unsplash.com/photo-1701269395744-32e3c1d11645?auto=format&fit=crop&w=1400&q=80", "tattooed person portrait"),
     ("Sleeve Tattoos: Planning a Full Arm That Works Together", "sleeve-tattoo-guide", "Style Guide", "10 min", "Big Pieces",
-     "tattoo sleeve", "full tattoo sleeve"),
+     "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=1400&q=80", "full tattoo sleeve in progress"),
     ("Script and Lettering Tattoos: Fonts, Placement and Mistakes", "script-tattoo-guide", "Style Guide", "7 min", "Lettering",
-     "lettering tattoo", "script lettering tattoo"),
+     "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80", "lettering tattoo on a forearm"),
 ]
 
 AMAZON_PRODUCTS = [
@@ -110,70 +110,42 @@ AMAZON_PRODUCTS = [
 
 
 def image_is_live(url):
-    """Unsplash retires photos without notice — three pool images had gone 404,
-    one of them already published with a broken hero."""
+    """Catches a retired image, but not a repurposed one.
+
+    A status check alone is not enough: some hosts answer 200 with a block page
+    or placeholder rather than an image, so the content type is checked too.
+    Neither check can tell whether the photo still shows a tattoo -- that is why
+    every URL in this file was opened and looked at by hand.
+    """
     try:
-        return requests.head(url, timeout=15, allow_redirects=True).status_code == 200
+        response = requests.head(url, timeout=15, allow_redirects=True)
+        if response.status_code != 200:
+            return False
+        return response.headers.get("Content-Type", "").startswith("image/")
     except Exception:
         return True  # a network blip should not block the weekly post
 
 
-PEXELS_ENDPOINT = "https://api.pexels.com/v1/search"
-
-# Used only when PEXELS_API_KEY is missing. Every one of these has been checked
-# by eye to be a photograph of an actual tattoo, which is more than could be
-# said for the hardcoded pool this replaced.
+# Every URL in TOPIC_POOL and below has been opened and looked at. That is the
+# only check that works here. Keyword search was tried and abandoned: the
+# public-domain pools return a canoe for "traditional tattoo", a digital skull
+# for "tattoo artist" and a basket of sweet potatoes for "getting a tattoo".
 FALLBACK_IMAGES = [
     "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80",
     "https://images.unsplash.com/photo-1552627019-947c3789ffb5?auto=format&fit=crop&w=1400&q=80",
-    "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80",
-    "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80",
-    "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80",
+    "https://live.staticflickr.com/65535/52302686837_bddd4d7f59_b.jpg",
+    "https://live.staticflickr.com/7548/16058781110_029032b185_b.jpg",
 ]
 
 
-def pexels_search(phrase):
-    key = os.environ.get("PEXELS_API_KEY", "")
-    if not key:
-        print("No PEXELS_API_KEY set — falling back to a built-in hero image")
-        return None
-    try:
-        response = requests.get(
-            PEXELS_ENDPOINT,
-            headers={"Authorization": key},
-            params={"query": phrase, "orientation": "landscape", "per_page": 20},
-            timeout=20,
-        )
-        response.raise_for_status()
-        photos = response.json().get("photos", [])
-    except Exception as e:
-        print(f"Pexels lookup failed ({e})")
-        return None
-    if not photos:
-        print(f"Pexels returned nothing for '{phrase}'")
-        return None
-
-    photo = random.choice(photos[:10])
-    print(f"Hero: '{phrase}' -> Pexels {photo['id']} by {photo.get('photographer')}")
-    pid = photo["id"]
-    # Keep the literal "w=1400" token: add_to_homepage() rewrites it to size the thumbnail.
-    return (f"https://images.pexels.com/photos/{pid}/pexels-photo-{pid}.jpeg"
-            f"?auto=compress&cs=tinysrgb&fit=crop&w=1400")
-
-
 def resolve_hero(topic):
-    """Turn the topic's search phrase into a real image URL.
-
-    Searching at publish time means the hero comes from whatever is actually
-    live right now, and the phrase keeps it on subject. A frozen ID could only
-    be checked for existence, never for still showing a tattoo.
-    """
-    title, slug, tag, read_time, category, phrase, hero_alt = topic
-    url = pexels_search(phrase)
-    if not url:
-        # Shuffle, or every article published without a key gets the same hero.
-        pool = random.sample(FALLBACK_IMAGES, len(FALLBACK_IMAGES))
-        url = next((u for u in pool if image_is_live(u)), pool[0])
+    """Keep the topic's verified image, or swap in a fallback if it has rotted."""
+    title, slug, tag, read_time, category, hero_image, hero_alt = topic
+    if image_is_live(hero_image):
+        return topic
+    pool = random.sample(FALLBACK_IMAGES, len(FALLBACK_IMAGES))
+    url = next((u for u in pool if image_is_live(u)), pool[0])
+    print(f"Hero for '{slug}' has rotted — substituting a fallback")
     return (title, slug, tag, read_time, category, url, hero_alt)
 
 
@@ -333,7 +305,7 @@ def add_to_homepage(topic, excerpt, keep=6):
         print(f"{slug}.html already linked from homepage")
         return
 
-    thumb = hero_image.replace("w=1400", "w=600&h=340")
+    thumb = hero_image.replace("w=1400", "w=600&h=340").replace("_b.jpg", "_z.jpg")
     meta_bits = f'<span>{read_time}</span>'
     if category.strip().lower() != tag.strip().lower():
         meta_bits += f'<span>·</span><span>{category}</span>'
