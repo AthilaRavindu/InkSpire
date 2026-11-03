@@ -9,6 +9,7 @@ import time
 import json
 import random
 import datetime
+import requests
 from google import genai
 from google.genai import errors as genai_errors
 
@@ -57,11 +58,11 @@ TOPIC_POOL = [
     ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Inspiration",
      "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=1400&q=80", "watercolour tattoo art"),
     ("Traditional vs Neo-Traditional Tattoos: What's the Difference?", "traditional-vs-neo-traditional", "Style Guide", "6 min", "Style Deep-Dive",
-     "https://images.unsplash.com/photo-1562155618-e1a8e303fc0a?auto=format&fit=crop&w=1400&q=80", "traditional tattoo style"),
+     "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80", "traditional tattoo style"),
     ("How Much Does a Tattoo Cost? 2025 Pricing Guide", "tattoo-cost-guide", "Advice", "5 min", "Budgeting",
      "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1400&q=80", "tattoo studio pricing"),
     ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Ink & Colour",
-     "https://images.unsplash.com/photo-1590246814883-57c511e0b6d0?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
+     "https://images.unsplash.com/photo-1562379825-415aea84ebcf?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
     ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Design",
      "https://images.unsplash.com/photo-1568515045052-f9a854d70bfd?auto=format&fit=crop&w=1400&q=80", "geometric tattoo pattern"),
     ("Japanese Tattoo Style: History, Meanings, and Modern Takes", "japanese-tattoo-guide", "Style Guide", "10 min", "Cultural Guide",
@@ -70,8 +71,20 @@ TOPIC_POOL = [
      "https://images.unsplash.com/photo-1513885535751-8b9238bd345a?auto=format&fit=crop&w=1400&q=80", "tattoo touch up"),
     ("Small Tattoo Ideas That Actually Age Well", "small-tattoo-ideas", "Inspiration", "7 min", "Ideas",
      "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=80", "small minimalist tattoo"),
-    ("Blackwork Tattoos: The Ultimate Bold Style Guide", "blackwork-tattoo-guide", "Style Guide", "9 min", "Style Guide",
-     "https://images.unsplash.com/photo-1571840840042-adf28b70d5ef?auto=format&fit=crop&w=1400&q=80", "blackwork tattoo bold"),
+    ("Blackwork Tattoos: The Ultimate Bold Style Guide", "blackwork-tattoo-guide", "Style Guide", "9 min", "Bold Styles",
+     "https://images.unsplash.com/photo-1557130641-1b14718f096a?auto=format&fit=crop&w=1400&q=80", "blackwork tattoo bold"),
+    ("Does Getting a Tattoo Hurt? Pain Chart by Body Part", "tattoo-pain-chart", "Advice", "7 min", "First Timers",
+     "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80", "person getting tattooed"),
+    ("How to Prepare for Your First Tattoo Appointment", "first-tattoo-prep", "Advice", "6 min", "First Timers",
+     "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80", "tattoo studio preparation"),
+    ("Tattoo Removal and Cover-Ups: What Your Options Are", "tattoo-coverup-removal", "Education", "8 min", "Fixing Mistakes",
+     "https://images.unsplash.com/photo-1597020976626-04261b0fac2a?auto=format&fit=crop&w=1400&q=80", "large cover up tattoo"),
+    ("Matching Tattoos: Ideas for Couples, Friends and Family", "matching-tattoos", "Inspiration", "6 min", "Ideas",
+     "https://images.unsplash.com/photo-1600716741845-3291dc455e67?auto=format&fit=crop&w=1400&q=80", "matching tattoos on two arms"),
+    ("Sleeve Tattoos: Planning a Full Arm That Works Together", "sleeve-tattoo-guide", "Style Guide", "10 min", "Big Pieces",
+     "https://images.unsplash.com/photo-1701269395744-32e3c1d11645?auto=format&fit=crop&w=1400&q=80", "full tattoo sleeve"),
+    ("Script and Lettering Tattoos: Fonts, Placement and Mistakes", "script-tattoo-guide", "Style Guide", "7 min", "Lettering",
+     "https://images.unsplash.com/photo-1566745506623-c87cc03b9e30?auto=format&fit=crop&w=1400&q=80", "script lettering tattoo"),
 ]
 
 AMAZON_PRODUCTS = [
@@ -90,6 +103,15 @@ AMAZON_PRODUCTS = [
 ]
 
 
+def image_is_live(url):
+    """Unsplash retires photos without notice — three pool images had gone 404,
+    one of them already published with a broken hero."""
+    try:
+        return requests.head(url, timeout=15, allow_redirects=True).status_code == 200
+    except Exception:
+        return True  # a network blip should not block the weekly post
+
+
 def pick_topic():
     used_file = ".github/scripts/used_topics.json"
     try:
@@ -103,7 +125,14 @@ def pick_topic():
         used = []
         available = TOPIC_POOL
 
-    topic = random.choice(available)
+    random.shuffle(available)
+    topic = available[0]
+    for candidate in available:
+        if image_is_live(candidate[5]):
+            topic = candidate
+            break
+        print(f"Hero image for '{candidate[1]}' is dead — skipping that topic")
+
     used.append(topic[1])
     used = used[-8:]
 
