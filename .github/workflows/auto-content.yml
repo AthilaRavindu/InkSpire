@@ -27,6 +27,8 @@ jobs:
       - name: Generate weekly blog post
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # Optional. Without it the script uses its built-in fallback heroes.
+          PEXELS_API_KEY: ${{ secrets.PEXELS_API_KEY }}
         run: python .github/scripts/generate_post.py
 
       - name: Generate Pinterest pin pack

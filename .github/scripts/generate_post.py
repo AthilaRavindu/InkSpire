@@ -53,24 +53,44 @@ def generate_with_retry(prompt, retries=3, delay=20):
 AFFILIATE_TAG = "inkspiretatto-20"
 
 TOPIC_POOL = [
+    # (title, slug, article_tag, read_time, category, image_search_phrase, hero_alt)
+    #
+    # Field 6 is a search phrase, not a URL. resolve_hero() turns it into a real
+    # image at publish time. It used to be a hardcoded stock ID, and six of those
+    # had silently become photographs of something else -- the Japanese guide's
+    # hero was a plate of fish and chips -- while still returning HTTP 200.
     ("Tattoo Placement Guide: Best Spots for Your First Tattoo", "placement-guide", "Placement", "7 min", "Beginner Guide",
-     "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80", "tattoo placement guide"),
+     "tattoo on arm", "tattoo placement guide"),
     ("Watercolour Tattoos: Everything You Need to Know", "watercolour-tattoos", "Style Guide", "8 min", "Inspiration",
-     "https://images.unsplash.com/photo-1611501275019-9b5cda994e8d?auto=format&fit=crop&w=1400&q=80", "watercolour tattoo art"),
+     "colourful tattoo", "watercolour tattoo art"),
+    ("Traditional vs Neo-Traditional Tattoos: What's the Difference?", "traditional-vs-neo-traditional", "Style Guide", "6 min", "Style Deep-Dive",
+     "traditional tattoo", "traditional tattoo style"),
     ("How Much Does a Tattoo Cost? 2025 Pricing Guide", "tattoo-cost-guide", "Advice", "5 min", "Budgeting",
-     "https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?auto=format&fit=crop&w=1400&q=80", "tattoo studio pricing"),
+     "tattoo studio", "tattoo studio pricing"),
     ("Tattoo Ink Colours: Which Last Longest and Why", "tattoo-ink-colours", "Education", "7 min", "Ink & Colour",
-     "https://images.unsplash.com/photo-1562379825-415aea84ebcf?auto=format&fit=crop&w=1400&q=80", "colourful tattoo ink"),
+     "tattoo ink", "colourful tattoo ink"),
     ("Geometric Tattoos: Style Guide and Artist Tips", "geometric-tattoos", "Style Guide", "8 min", "Design",
-     "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80", "geometric back tattoo"),
+     "geometric tattoo", "geometric tattoo pattern"),
+    ("Japanese Tattoo Style: History, Meanings and Modern Takes", "japanese-tattoo-guide", "Style Guide", "10 min", "Cultural Guide",
+     "japanese tattoo", "Japanese tattoo irezumi"),
     ("Tattoo Touch-Ups: When, Why, and How Much They Cost", "tattoo-touch-up-guide", "Aftercare", "6 min", "Maintenance",
-     "https://images.unsplash.com/photo-1552627019-947c3789ffb5?auto=format&fit=crop&w=1400&q=80", "tattoo artist reworking a piece"),
+     "tattoo artist working", "tattoo touch up"),
     ("Small Tattoo Ideas That Actually Age Well", "small-tattoo-ideas", "Inspiration", "7 min", "Ideas",
-     "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&w=1400&q=80", "small minimalist tattoo"),
+     "small tattoo", "small minimalist tattoo"),
+    ("Blackwork Tattoos: The Ultimate Bold Style Guide", "blackwork-tattoo-guide", "Style Guide", "9 min", "Bold Styles",
+     "blackwork tattoo", "blackwork tattoo bold"),
     ("Does Getting a Tattoo Hurt? Pain Chart by Body Part", "tattoo-pain-chart", "Advice", "7 min", "First Timers",
-     "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80", "person getting tattooed"),
+     "getting a tattoo", "person getting tattooed"),
+    ("How to Prepare for Your First Tattoo Appointment", "first-tattoo-prep", "Advice", "6 min", "First Timers",
+     "tattoo shop interior", "tattoo studio preparation"),
+    ("Tattoo Removal and Cover-Ups: What Your Options Are", "tattoo-coverup-removal", "Education", "8 min", "Fixing Mistakes",
+     "large arm tattoo", "large cover up tattoo"),
+    ("Matching Tattoos: Ideas for Couples, Friends and Family", "matching-tattoos", "Inspiration", "6 min", "Ideas",
+     "couple tattoo", "matching tattoos on two arms"),
+    ("Sleeve Tattoos: Planning a Full Arm That Works Together", "sleeve-tattoo-guide", "Style Guide", "10 min", "Big Pieces",
+     "tattoo sleeve", "full tattoo sleeve"),
     ("Script and Lettering Tattoos: Fonts, Placement and Mistakes", "script-tattoo-guide", "Style Guide", "7 min", "Lettering",
-     "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80", "script lettering tattoo on a forearm"),
+     "lettering tattoo", "script lettering tattoo"),
 ]
 
 AMAZON_PRODUCTS = [
@@ -98,6 +118,65 @@ def image_is_live(url):
         return True  # a network blip should not block the weekly post
 
 
+PEXELS_ENDPOINT = "https://api.pexels.com/v1/search"
+
+# Used only when PEXELS_API_KEY is missing. Every one of these has been checked
+# by eye to be a photograph of an actual tattoo, which is more than could be
+# said for the hardcoded pool this replaced.
+FALLBACK_IMAGES = [
+    "https://images.unsplash.com/photo-1565058379802-bbe93b2f703a?auto=format&fit=crop&w=1400&q=80",
+    "https://images.unsplash.com/photo-1552627019-947c3789ffb5?auto=format&fit=crop&w=1400&q=80",
+    "https://images.unsplash.com/photo-1594812332797-bec39ee15b47?auto=format&fit=crop&w=1400&q=80",
+    "https://images.unsplash.com/photo-1608270788029-458f9705a0b9?auto=format&fit=crop&w=1400&q=80",
+    "https://images.unsplash.com/photo-1542727365-19732a80dcfd?auto=format&fit=crop&w=1400&q=80",
+]
+
+
+def pexels_search(phrase):
+    key = os.environ.get("PEXELS_API_KEY", "")
+    if not key:
+        print("No PEXELS_API_KEY set — falling back to a built-in hero image")
+        return None
+    try:
+        response = requests.get(
+            PEXELS_ENDPOINT,
+            headers={"Authorization": key},
+            params={"query": phrase, "orientation": "landscape", "per_page": 20},
+            timeout=20,
+        )
+        response.raise_for_status()
+        photos = response.json().get("photos", [])
+    except Exception as e:
+        print(f"Pexels lookup failed ({e})")
+        return None
+    if not photos:
+        print(f"Pexels returned nothing for '{phrase}'")
+        return None
+
+    photo = random.choice(photos[:10])
+    print(f"Hero: '{phrase}' -> Pexels {photo['id']} by {photo.get('photographer')}")
+    pid = photo["id"]
+    # Keep the literal "w=1400" token: add_to_homepage() rewrites it to size the thumbnail.
+    return (f"https://images.pexels.com/photos/{pid}/pexels-photo-{pid}.jpeg"
+            f"?auto=compress&cs=tinysrgb&fit=crop&w=1400")
+
+
+def resolve_hero(topic):
+    """Turn the topic's search phrase into a real image URL.
+
+    Searching at publish time means the hero comes from whatever is actually
+    live right now, and the phrase keeps it on subject. A frozen ID could only
+    be checked for existence, never for still showing a tattoo.
+    """
+    title, slug, tag, read_time, category, phrase, hero_alt = topic
+    url = pexels_search(phrase)
+    if not url:
+        # Shuffle, or every article published without a key gets the same hero.
+        pool = random.sample(FALLBACK_IMAGES, len(FALLBACK_IMAGES))
+        url = next((u for u in pool if image_is_live(u)), pool[0])
+    return (title, slug, tag, read_time, category, url, hero_alt)
+
+
 def pick_topic():
     used_file = ".github/scripts/used_topics.json"
     try:
@@ -117,13 +196,7 @@ def pick_topic():
     if not available:
         raise SystemExit("Every pool topic is already published — add new topics.")
 
-    random.shuffle(available)
-    topic = available[0]
-    for candidate in available:
-        if image_is_live(candidate[5]):
-            topic = candidate
-            break
-        print(f"Hero image for '{candidate[1]}' is dead — skipping that topic")
+    topic = random.choice(available)
 
     used.append(topic[1])
     used = used[-8:]
@@ -300,7 +373,7 @@ def add_to_homepage(topic, excerpt, keep=6):
 
 if __name__ == "__main__":
     print("Generating weekly blog post...")
-    topic = pick_topic()
+    topic = resolve_hero(pick_topic())
     print(f"Topic: {topic[0]}")
     body = generate_article(topic)
     excerpt, description = write_card_copy(topic[0], body)
