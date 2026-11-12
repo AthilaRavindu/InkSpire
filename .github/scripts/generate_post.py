@@ -198,8 +198,12 @@ def generate_article(topic):
 Write a complete, SEO-optimised article about: "{title}"
 
 Requirements:
-- 700-900 words of genuinely useful content
-- Use the keyword "{title.lower()}" naturally in the first paragraph as PLAIN TEXT, never as a link
+- 900-1200 words of genuinely useful content
+- Open by addressing the subject directly. Do NOT paste the article title into the first
+  sentence: titles with a colon cannot be worked into prose grammatically, and exact-match
+  keyword stuffing reads as spam to readers and search engines alike. Write the opening the
+  way a person would say it out loud.
+- Never place a link in the first paragraph.
 - NEVER invent, guess, or make up any URL or domain name. The ONLY links allowed in the
   entire article are the Amazon product link below and these two internal links, each used
   once, placed naturally where the topic fits:
